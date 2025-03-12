@@ -1,0 +1,4 @@
+Flask
+flask-swagger-ui
+pyngrok
+gunicorn
