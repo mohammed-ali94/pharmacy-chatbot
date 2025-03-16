@@ -1,8 +1,8 @@
 import os
+import requests
 from flask import Flask, request, jsonify, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
 import logging
-from drug_info import get_drug_info
 from pyngrok import ngrok
 
 # Configure logging
@@ -25,14 +25,55 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
-@app.route('/')
-def home():
-    """Render the home page with API testing interface"""
-    return render_template('index.html')
+# Function to fetch data from PubChem API
+def get_drug_info_pubchem(drug_name):
+    """Fetch drug information from the PubChem Autocomplete API."""
+    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/{drug_name}/json"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if 'result' in data and len(data['result']) > 0:
+                drug_info = data['result'][0]
+                return {
+                    "name": drug_info.get("name", "No name available"),
+                    "cid": drug_info.get("cid", "No CID available")
+                }
+            else:
+                return {"message": "No drug information found in PubChem."}
+        else:
+            return {"message": "Failed to fetch data from PubChem."}
+    except requests.exceptions.RequestException as e:
+        return {"message": f"Request error: {str(e)}"}
 
+# Function to fetch data from OpenFDA API
+def get_drug_info_openfda(drug_name):
+    """Fetch drug information from the OpenFDA Drugs API."""
+    url = f"https://api.fda.gov/drug/drugsfda.json?search=brand_name:\"{drug_name}\"&limit=1"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if 'results' in data and len(data['results']) > 0:
+                drug_info = data['results'][0]
+                return {
+                    "name": drug_info.get("brand_name", "No brand name available"),
+                    "generic_name": drug_info.get("generic_name", "No generic name available"),
+                    "substance_name": drug_info.get("substance_name", "No substance name available"),
+                    "approval_date": drug_info.get("approval_date", "No approval date available"),
+                    "product_id": drug_info.get("product_id", "No product ID available")
+                }
+            else:
+                return {"message": "No drug information found in OpenFDA."}
+        else:
+            return {"message": "Failed to fetch data from OpenFDA."}
+    except requests.exceptions.RequestException as e:
+        return {"message": f"Request error: {str(e)}"}
+
+# API route to get drug information
 @app.route('/api/v1/drug', methods=['GET'])
 def drug_info():
-    """API endpoint to get drug information"""
+    """API endpoint to get drug information from multiple sources."""
     drug_name = request.args.get('name', '').strip()
     
     if not drug_name:
@@ -42,11 +83,17 @@ def drug_info():
         }), 400
     
     try:
-        drug_data = get_drug_info(drug_name)
+        # Get drug info from both PubChem and OpenFDA
+        pubchem_data = get_drug_info_pubchem(drug_name)
+        openfda_data = get_drug_info_openfda(drug_name)
+        
+        # Combine the results from both APIs
         return jsonify({
             "status": "success",
-            "data": drug_data
+            "pubchem_data": pubchem_data,
+            "openfda_data": openfda_data
         })
+    
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
         return jsonify({
@@ -66,7 +113,7 @@ def swagger_spec():
         "paths": {
             "/api/v1/drug": {
                 "get": {
-                    "summary": "Get drug information",
+                    "summary": "Get drug information from multiple sources",
                     "parameters": [
                         {
                             "name": "name",
@@ -83,7 +130,8 @@ def swagger_spec():
                                 "type": "object",
                                 "properties": {
                                     "status": {"type": "string"},
-                                    "data": {"type": "object"}
+                                    "pubchem_data": {"type": "object"},
+                                    "openfda_data": {"type": "object"}
                                 }
                             }
                         },
@@ -108,3 +156,7 @@ def setup_ngrok():
     except Exception as e:
         logger.error(f"Failed to establish ngrok tunnel: {str(e)}")
         return None
+
+# Run the app
+if __name__ == '__main__':
+    app.run(debug=True)
