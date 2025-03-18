@@ -30,8 +30,8 @@ def index():
 
 # Function to fetch data from PubChem API
 def get_drug_info_pubchem(drug_name):
-    """Fetch drug information from the PubChem Autocomplete API."""
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/{drug_name}/json"
+    """Fetch drug information from the PubChem Compound API."""
+    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{drug_name}/JSON"
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -52,7 +52,7 @@ def get_drug_info_pubchem(drug_name):
 # Function to fetch data from OpenFDA API
 def get_drug_info_openfda(drug_name):
     """Fetch drug information from the OpenFDA Drugs API."""
-    url = f"https://api.fda.gov/drug/drugsfda.json?search=brand_name:\"{drug_name}\"&limit=1"
+    url = f"https://api.fda.gov/drug/label.json?search=brand_name:{drug_name}&limit=1"
     try:
         response = requests.get(url)
         if response.status_code == 200:
