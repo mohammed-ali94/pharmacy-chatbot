@@ -40,12 +40,51 @@
                     results.innerHTML = `
                         <div class="card">
                             <div class="card-body">
-                                <h3>${drugName.toUpperCase()}</h3>
-                                <p><strong>Status:</strong> ${data.status}</p>
-                                <h4>OpenFDA Data:</h4>
-                                <pre>${JSON.stringify(data.openfda_data, null, 2)}</pre>
-                                <h4>PubChem Data:</h4>
-                                <pre>${JSON.stringify(data.pubchem_data, null, 2)}</pre>
+                                <h2 class="mb-4">${drugName.toUpperCase()}</h2>
+                                <div class="alert alert-success">Status: ${data.status}</div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-header bg-primary text-white">
+                                        <h4 class="mb-0">OpenFDA Information</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5>Brand Name</h5>
+                                        <p>${data.openfda_data.brand_name}</p>
+                                        
+                                        <h5>Generic Name</h5>
+                                        <p>${data.openfda_data.generic_name}</p>
+                                        
+                                        <h5>Manufacturer</h5>
+                                        <p>${data.openfda_data.manufacturer}</p>
+                                        
+                                        <h5>Indications (Uses)</h5>
+                                        <p>${data.openfda_data.indications}</p>
+                                        
+                                        <h5>Dosage</h5>
+                                        <p>${data.openfda_data.dosage}</p>
+                                        
+                                        <h5>Warnings</h5>
+                                        <div class="alert alert-warning">
+                                            ${data.openfda_data.warnings}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header bg-info text-white">
+                                        <h4 class="mb-0">PubChem Information</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5>Title</h5>
+                                        <p>${data.pubchem_data.title}</p>
+                                        
+                                        <h5>CID</h5>
+                                        <p>${data.pubchem_data.cid}</p>
+                                        
+                                        <h5>Description</h5>
+                                        <p>${data.pubchem_data.description}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
