@@ -82,6 +82,41 @@ def get_drug_info_openfda(drug_name):
 
 # API route to get drug information
 @app.route('/api/v1/drug', methods=['GET'])
+def get_rxnav_info(drug_name):
+    """Fetch drug information from RxNav API."""
+    try:
+        url = f"https://rxnav.nlm.nih.gov/REST/drugs.json?name={drug_name}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if 'drugGroup' in data and 'conceptGroup' in data['drugGroup']:
+                drug_info = data['drugGroup']['conceptGroup']
+                return {
+                    "status": "success",
+                    "drug_classes": [group.get('conceptProperties', []) for group in drug_info if 'conceptProperties' in group],
+                    "source": "RxNav"
+                }
+        return {"status": "partial", "message": "Limited RxNav information available"}
+    except Exception as e:
+        return {"message": f"Error fetching RxNav data: {str(e)}"}
+
+def get_dailymed_info(drug_name):
+    """Fetch drug information from DailyMed API."""
+    try:
+        url = f"https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name={drug_name}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('data'):
+                return {
+                    "status": "success",
+                    "labels": data['data'],
+                    "source": "DailyMed"
+                }
+        return {"status": "partial", "message": "Limited DailyMed information available"}
+    except Exception as e:
+        return {"message": f"Error fetching DailyMed data: {str(e)}"}
+
 def drug_info():
     """API endpoint to get drug information from multiple sources."""
     drug_name = request.args.get('name', '').strip()
@@ -93,15 +128,19 @@ def drug_info():
         }), 400
     
     try:
-        # Get drug info from both PubChem and OpenFDA
+        # Get drug info from all sources
         pubchem_data = get_drug_info_pubchem(drug_name)
         openfda_data = get_drug_info_openfda(drug_name)
+        rxnav_data = get_rxnav_info(drug_name)
+        dailymed_data = get_dailymed_info(drug_name)
         
         # Combine the results from both APIs
         return jsonify({
             "status": "success",
             "pubchem_data": pubchem_data,
-            "openfda_data": openfda_data
+            "openfda_data": openfda_data,
+            "rxnav_data": rxnav_data,
+            "dailymed_data": dailymed_data
         })
     
     except Exception as e:
