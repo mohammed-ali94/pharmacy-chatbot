@@ -3,7 +3,6 @@ import requests
 from flask import Flask, request, jsonify, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
 import logging
-from pyngrok import ngrok
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -147,16 +146,7 @@ def swagger_spec():
         }
     })
 
-def setup_ngrok():
-    """Setup ngrok tunnel"""
-    try:
-        public_url = ngrok.connect(5000).public_url
-        logger.info(f"Ngrok tunnel established at: {public_url}")
-        return public_url
-    except Exception as e:
-        logger.error(f"Failed to establish ngrok tunnel: {str(e)}")
-        return None
-
 # Run the app
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
+
