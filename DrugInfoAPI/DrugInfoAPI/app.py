@@ -26,14 +26,7 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
 @app.route('/')
 def index():
-    return """
-    <h1>Drug Information API</h1>
-    <p>Available endpoints:</p>
-    <ul>
-        <li><a href="/api/docs">API Documentation</a></li>
-        <li>API Endpoint: <code>/api/v1/drug?name=DRUG_NAME</code></li>
-    </ul>
-    """
+    return send_file('templates/index.html')
 
 # Function to fetch data from PubChem API
 def get_drug_info_pubchem(drug_name):
