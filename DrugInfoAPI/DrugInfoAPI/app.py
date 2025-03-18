@@ -1,6 +1,16 @@
 import os
 import requests
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
+from pyngrok import ngrok
+
+def setup_ngrok():
+    try:
+        # Open a HTTP tunnel on the default port 80
+        public_url = ngrok.connect(5000).public_url
+        return public_url
+    except Exception as e:
+        print(f"Error setting up ngrok: {e}")
+        return None, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
 import logging
 
@@ -149,4 +159,3 @@ def swagger_spec():
 # Run the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
-
