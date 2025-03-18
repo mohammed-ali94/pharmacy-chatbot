@@ -81,7 +81,6 @@ def get_drug_info_openfda(drug_name):
         return {"message": f"Error fetching OpenFDA data: {str(e)}"}
 
 # API route to get drug information
-@app.route('/api/v1/drug', methods=['GET'])
 def get_rxnav_info(drug_name):
     """Fetch drug information from RxNav API."""
     try:
@@ -117,6 +116,7 @@ def get_dailymed_info(drug_name):
     except Exception as e:
         return {"message": f"Error fetching DailyMed data: {str(e)}"}
 
+@app.route('/api/v1/drug', methods=['GET'])
 def drug_info():
     """API endpoint to get drug information from multiple sources."""
     drug_name = request.args.get('name', '').strip()
