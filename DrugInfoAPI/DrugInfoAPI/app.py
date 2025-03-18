@@ -52,7 +52,7 @@ def get_drug_info_pubchem(drug_name):
 # Function to fetch data from OpenFDA API
 def get_drug_info_openfda(drug_name):
     """Fetch drug information from the OpenFDA Drugs API."""
-    url = f"https://api.fda.gov/drug/label.json?search=brand_name:{drug_name}&limit=1"
+    url = f"https://api.fda.gov/drug/label.json?search=generic_name:{drug_name}&limit=1"
     try:
         response = requests.get(url)
         if response.status_code == 200:
