@@ -31,47 +31,54 @@ def index():
 # Function to fetch data from PubChem API
 def get_drug_info_pubchem(drug_name):
     """Fetch drug information from the PubChem Compound API."""
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{drug_name}/JSON"
+    base_url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
     try:
-        response = requests.get(url)
+        # First get the CID
+        search_url = f"{base_url}/compound/name/{drug_name}/cids/JSON"
+        response = requests.get(search_url)
         if response.status_code == 200:
             data = response.json()
-            if 'result' in data and len(data['result']) > 0:
-                drug_info = data['result'][0]
-                return {
-                    "name": drug_info.get("name", "No name available"),
-                    "cid": drug_info.get("cid", "No CID available")
-                }
-            else:
-                return {"message": "No drug information found in PubChem."}
-        else:
-            return {"message": "Failed to fetch data from PubChem."}
-    except requests.exceptions.RequestException as e:
-        return {"message": f"Request error: {str(e)}"}
+            if 'IdentifierList' in data and 'CID' in data['IdentifierList']:
+                cid = data['IdentifierList']['CID'][0]
+                # Now get the compound info
+                info_url = f"{base_url}/compound/cid/{cid}/description/JSON"
+                info_response = requests.get(info_url)
+                if info_response.status_code == 200:
+                    info_data = info_response.json()
+                    if 'InformationList' in info_data and 'Information' in info_data['InformationList']:
+                        info = info_data['InformationList']['Information'][0]
+                        return {
+                            "name": drug_name.upper(),
+                            "cid": cid,
+                            "description": info.get('Description', 'No description available'),
+                            "title": info.get('Title', 'No title available')
+                        }
+        return {"message": "No drug information found in PubChem."}
+    except Exception as e:
+        return {"message": f"Error fetching PubChem data: {str(e)}"}
 
 # Function to fetch data from OpenFDA API
 def get_drug_info_openfda(drug_name):
     """Fetch drug information from the OpenFDA Drugs API."""
-    url = f"https://api.fda.gov/drug/label.json?search=generic_name:{drug_name}&limit=1"
+    api_key = "your-api-key"  # Optional: Add your API key here for higher rate limits
+    url = f"https://api.fda.gov/drug/label.json?search=openfda.generic_name:{drug_name}+OR+openfda.brand_name:{drug_name}&limit=1"
     try:
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
             if 'results' in data and len(data['results']) > 0:
-                drug_info = data['results'][0]
+                result = data['results'][0]
                 return {
-                    "name": drug_info.get("brand_name", "No brand name available"),
-                    "generic_name": drug_info.get("generic_name", "No generic name available"),
-                    "substance_name": drug_info.get("substance_name", "No substance name available"),
-                    "approval_date": drug_info.get("approval_date", "No approval date available"),
-                    "product_id": drug_info.get("product_id", "No product ID available")
+                    "brand_name": result.get('openfda', {}).get('brand_name', ['Not available'])[0],
+                    "generic_name": result.get('openfda', {}).get('generic_name', ['Not available'])[0],
+                    "indications": result.get('indications_and_usage', ['Not available'])[0],
+                    "warnings": result.get('warnings', ['Not available'])[0],
+                    "dosage": result.get('dosage_and_administration', ['Not available'])[0],
+                    "manufacturer": result.get('openfda', {}).get('manufacturer_name', ['Not available'])[0]
                 }
-            else:
-                return {"message": "No drug information found in OpenFDA."}
-        else:
-            return {"message": "Failed to fetch data from OpenFDA."}
-    except requests.exceptions.RequestException as e:
-        return {"message": f"Request error: {str(e)}"}
+        return {"message": "No drug information found in OpenFDA."}
+    except Exception as e:
+        return {"message": f"Error fetching OpenFDA data: {str(e)}"}
 
 # API route to get drug information
 @app.route('/api/v1/drug', methods=['GET'])
