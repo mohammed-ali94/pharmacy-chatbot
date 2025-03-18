@@ -135,13 +135,28 @@ def drug_info():
         dailymed_data = get_dailymed_info(drug_name)
         
         # Combine the results from both APIs
-        return jsonify({
-            "status": "success",
-            "pubchem_data": pubchem_data,
-            "openfda_data": openfda_data,
-            "rxnav_data": rxnav_data,
-            "dailymed_data": dailymed_data
-        })
+        # Check if we have OpenFDA data
+        if "message" not in openfda_data:
+            return jsonify({
+                "status": "success",
+                "primary_source": "FDA",
+                "openfda_data": openfda_data,
+                "additional_sources": {
+                    "pubchem_data": pubchem_data,
+                    "rxnav_data": rxnav_data,
+                    "dailymed_data": dailymed_data
+                }
+            })
+        else:
+            return jsonify({
+                "status": "limited",
+                "message": "Limited FDA data available",
+                "alternative_sources": {
+                    "pubchem_data": pubchem_data,
+                    "rxnav_data": rxnav_data,
+                    "dailymed_data": dailymed_data
+                }
+            })
     
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
