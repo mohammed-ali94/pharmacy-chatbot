@@ -55,7 +55,6 @@ def get_drug_info_pubchem(drug_name):
                         }
         return {"message": "No drug information found in PubChem."}
     except Exception as e:
-        logger.error(f"Error fetching PubChem data: {str(e)}")
         return {"message": f"Error fetching PubChem data: {str(e)}"}
 
 # Function to fetch data from OpenFDA API
@@ -65,6 +64,7 @@ def get_drug_info_openfda(drug_name):
     url = f"https://api.fda.gov/drug/label.json?search=openfda.generic_name:{drug_name}+OR+openfda.brand_name:{drug_name}&limit=1"
     try:
         response = requests.get(url)
+        logger.debug(f"OpenFDA response: {response.text}")  # Log the response for debugging
         if response.status_code == 200:
             data = response.json()
             if 'results' in data and len(data['results']) > 0:
@@ -79,10 +79,45 @@ def get_drug_info_openfda(drug_name):
                 }
         return {"message": "No drug information found in OpenFDA."}
     except Exception as e:
-        logger.error(f"Error fetching OpenFDA data: {str(e)}")
         return {"message": f"Error fetching OpenFDA data: {str(e)}"}
 
-# API route to get drug information
+# Function to fetch data from RxNav API
+def get_rxnav_info(drug_name):
+    """Fetch drug information from RxNav API."""
+    try:
+        url = f"https://rxnav.nlm.nih.gov/REST/drugs.json?name={drug_name}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if 'drugGroup' in data and 'conceptGroup' in data['drugGroup']:
+                drug_info = data['drugGroup']['conceptGroup']
+                return {
+                    "status": "success",
+                    "drug_classes": [group.get('conceptProperties', []) for group in drug_info if 'conceptProperties' in group],
+                    "source": "RxNav"
+                }
+        return {"status": "partial", "message": "Limited RxNav information available"}
+    except Exception as e:
+        return {"message": f"Error fetching RxNav data: {str(e)}"}
+
+# Function to fetch data from DailyMed API
+def get_dailymed_info(drug_name):
+    """Fetch drug information from DailyMed API."""
+    try:
+        url = f"https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name={drug_name}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('data'):
+                return {
+                    "status": "success",
+                    "labels": data['data'],
+                    "source": "DailyMed"
+                }
+        return {"status": "partial", "message": "Limited DailyMed information available"}
+    except Exception as e:
+        return {"message": f"Error fetching DailyMed data: {str(e)}"}
+
 @app.route('/api/v1/drug', methods=['GET'])
 def drug_info():
     """API endpoint to get drug information from multiple sources."""
@@ -98,8 +133,11 @@ def drug_info():
         # Get drug info from all sources
         pubchem_data = get_drug_info_pubchem(drug_name)
         openfda_data = get_drug_info_openfda(drug_name)
+        rxnav_data = get_rxnav_info(drug_name)
+        dailymed_data = get_dailymed_info(drug_name)
         
         # Combine the results from both APIs
+        # Check if we have OpenFDA data
         if "message" not in openfda_data:
             return jsonify({
                 "status": "success",
@@ -107,14 +145,19 @@ def drug_info():
                 "openfda_data": openfda_data,
                 "additional_sources": {
                     "pubchem_data": pubchem_data,
+                    "rxnav_data": rxnav_data,
+                    "dailymed_data": dailymed_data
                 }
             })
         else:
             return jsonify({
-                "status": "limited",
-                "message": "Limited FDA data available",
+                "status": "partial",
+                "message": "Limited FDA data available. The following data might be incomplete or missing:",
+                "openfda_data": openfda_data,
                 "alternative_sources": {
                     "pubchem_data": pubchem_data,
+                    "rxnav_data": rxnav_data,
+                    "dailymed_data": dailymed_data
                 }
             })
     
@@ -171,7 +214,7 @@ def swagger_spec():
         }
     })
 
-# Run the app (this should not be used in production with Gunicorn)
+# Run the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
 
