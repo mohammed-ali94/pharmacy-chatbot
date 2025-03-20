@@ -55,6 +55,7 @@ def get_drug_info_pubchem(drug_name):
                         }
         return {"message": "No drug information found in PubChem."}
     except Exception as e:
+        logger.error(f"Error fetching PubChem data: {str(e)}")
         return {"message": f"Error fetching PubChem data: {str(e)}"}
 
 # Function to fetch data from OpenFDA API
@@ -79,6 +80,7 @@ def get_drug_info_openfda(drug_name):
                 }
         return {"message": "No drug information found in OpenFDA."}
     except Exception as e:
+        logger.error(f"Error fetching OpenFDA data: {str(e)}")
         return {"message": f"Error fetching OpenFDA data: {str(e)}"}
 
 # Function to fetch data from RxNav API
@@ -98,6 +100,7 @@ def get_rxnav_info(drug_name):
                 }
         return {"status": "partial", "message": "Limited RxNav information available"}
     except Exception as e:
+        logger.error(f"Error fetching RxNav data: {str(e)}")
         return {"message": f"Error fetching RxNav data: {str(e)}"}
 
 # Function to fetch data from DailyMed API
@@ -116,6 +119,7 @@ def get_dailymed_info(drug_name):
                 }
         return {"status": "partial", "message": "Limited DailyMed information available"}
     except Exception as e:
+        logger.error(f"Error fetching DailyMed data: {str(e)}")
         return {"message": f"Error fetching DailyMed data: {str(e)}"}
 
 @app.route('/api/v1/drug', methods=['GET'])
@@ -137,7 +141,6 @@ def drug_info():
         dailymed_data = get_dailymed_info(drug_name)
         
         # Combine the results from both APIs
-        # Check if we have OpenFDA data
         if "message" not in openfda_data:
             return jsonify({
                 "status": "success",
@@ -217,4 +220,3 @@ def swagger_spec():
 # Run the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
-
