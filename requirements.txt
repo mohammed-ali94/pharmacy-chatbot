@@ -3,3 +3,4 @@ flask-swagger-ui
 pyngrok
 gunicorn
 requests
+streamlit==1.x.x  
